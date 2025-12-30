@@ -49,6 +49,8 @@ app.*.map.json
 .packages
 .pub/
 build/
+*.iml
+
 
 # Android
 android/.gradle/
@@ -69,6 +71,8 @@ ios/Flutter/ephemeral/
 # IDE files
 .idea/
 .vscode/
+
+
 
 # Logs
 *.log
