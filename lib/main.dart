@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'screens/auth_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'models/employee.dart';
 
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-void main() {
+  await Hive.initFlutter();
+
+  Hive.registerAdapter(EmployeeAdapter());
+
+  await Hive.openBox<Employee>('employeesBox');
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key}); 
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+
 import 'package:employee_dashboard/models/employee.dart';
 import 'package:employee_dashboard/services/employee_services.dart';
 import 'employee_form_screen.dart';
@@ -14,24 +16,37 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   List<Employee> employees = [];
   bool isLoading = true;
 
+  final Box<Employee> box = Hive.box<Employee>('employeesBox');
   @override
   void initState() {
     super.initState();
-    loadEmployees();
+
+    employees = box.values.toList();
+    isLoading = false;
+
+    if (employees.isEmpty) {
+      loadEmployees();
+    }
   }
 
   Future<void> loadEmployees() async {
     try {
       final service = EmployeeServices();
-      final result = await service.fetchEmployees();
+      final result = await service.fetchAndSaveEmployees();
+
+      if (result.isNotEmpty) {
+        setState(() {
+          employees = result;
+        });
+      }
+    } catch (_) {
+      debugPrint('API failed, using local Hive data');
 
       setState(() {
-        employees = result;
+        employees = box.values.toList();
         isLoading = false;
-      });
-    } catch (e) {
-      setState(() => isLoading = false);
-      debugPrint('Error loading employees: $e');
+      }
+      );
     }
   }
 
@@ -39,6 +54,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Employee List')),
+
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : employees.isEmpty
@@ -57,9 +73,11 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(emp.email),
+
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // EDIT
                         IconButton(
                           icon: const Icon(Icons.edit),
                           onPressed: () async {
@@ -78,18 +96,23 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                                   (e) => e.id == updatedEmployee.id,
                                 );
                                 if (idx != -1) {
-                                  employees[idx] = updatedEmployee;
+                                  setState(() {
+                                    employees[idx] = updatedEmployee;
+                                    box.putAt(idx, updatedEmployee);
+                                  });
                                 }
                               });
                             }
                           },
                         ),
+                        // DELETE
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () {
                             setState(() {
                               employees.removeAt(index);
                             });
+                            box.deleteAt(index);
                           },
                         ),
                       ],
@@ -108,6 +131,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
           if (newEmployee != null) {
             setState(() {
               employees.add(newEmployee);
+              box.add(newEmployee);
             });
           }
         },
