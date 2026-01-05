@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:employee_dashboard/models/employee.dart';
-import '../utils/token_storage.dart';
-import '../utils/api_config.dart';
+import 'package:employee_dashboard/utils/token_storage.dart';
+import 'package:employee_dashboard/utils/api_config.dart';
 
 class EmployeeServices {
   final Box<Employee> box = Hive.box<Employee>('employeesBox');
@@ -27,10 +27,10 @@ class EmployeeServices {
 
         final List<Employee> employees = results.map<Employee>((json) {
           return Employee(
-            id: json['id'] ?? DateTime.now().millisecondsSinceEpoch,
-            name: json['name'] ?? 'No Name',
-            email: json['email'] ?? '',
-            role: json['role'] ?? 'Employee',
+            userId: json['id'] ?? DateTime.now().millisecondsSinceEpoch,
+            userName: json['name'] ?? 'No Name',
+            designation: json['role'] ?? 'Employee',
+            emailAddress: json['email'] ?? '',
           );
         }).toList();
 

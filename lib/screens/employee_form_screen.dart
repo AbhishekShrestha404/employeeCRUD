@@ -36,8 +36,8 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
     super.initState();
 
     if (widget.employee != null) {
-      nameController.text = widget.employee!.name;
-      roleController.text = widget.employee!.role;
+      nameController.text = widget.employee!.userName;
+      roleController.text = widget.employee!.designation;
     }
   }
 
@@ -83,18 +83,17 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
                   if (!validate()) return;
 
                   final updatedEmployee = Employee(
-                    id:
-                        widget.employee?.id ??
+                    userId:
+                        widget.employee?.userId ??
                         DateTime.now().microsecondsSinceEpoch,
-                    name: nameController.text.trim(),
-                    role: roleController.text.trim(),
-                    email:
-                        widget.employee?.email ??
+                    userName: nameController.text.trim(),
+                    designation: roleController.text.trim(),
+                    emailAddress:
+                        widget.employee?.emailAddress ??
                         '${nameController.text.trim().toLowerCase()}@company.com',
                   );
 
                   Navigator.pop(context, updatedEmployee);
-                 
                 },
                 child: const Text(
                   'Save',

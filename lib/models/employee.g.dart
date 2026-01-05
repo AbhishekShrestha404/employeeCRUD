@@ -17,10 +17,10 @@ class EmployeeAdapter extends TypeAdapter<Employee> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Employee(
-      id: fields[0] as int,
-      name: fields[1] as String,
-      role: fields[2] as String,
-      email: fields[3] as String,
+      userId: fields[0] as int,
+      userName: fields[1] as String,
+      designation: fields[2] as String,
+      emailAddress: fields[3] as String,
     );
   }
 
@@ -29,13 +29,13 @@ class EmployeeAdapter extends TypeAdapter<Employee> {
     writer
       ..writeByte(4)
       ..writeByte(0)
-      ..write(obj.id)
+      ..write(obj.userId)
       ..writeByte(1)
-      ..write(obj.name)
+      ..write(obj.userName)
       ..writeByte(2)
-      ..write(obj.role)
+      ..write(obj.designation)
       ..writeByte(3)
-      ..write(obj.email);
+      ..write(obj.emailAddress);
   }
 
   @override

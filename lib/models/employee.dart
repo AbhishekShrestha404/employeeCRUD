@@ -5,30 +5,30 @@ part 'employee.g.dart';
 @HiveType(typeId: 0)
 class Employee {
   @HiveField(0)
-  final int id;
+  final int userId;
 
   @HiveField(1)
-  final String name;
+  final String userName;
 
   @HiveField(2)
-  final String role;
+  final String designation;
 
   @HiveField(3)
-  final String email;
+  final String emailAddress;
 
   Employee({
-    required this.id,
-    required this.name,
-    required this.role,
-    required this.email,
+    required this.userId,
+    required this.userName,
+    required this.designation,
+    required this.emailAddress,
   });
 
   factory Employee.fromJson(Map<String, dynamic> json) {
     return Employee(
-      id: json['id'],
-      name: json['name'],
-      role: json['role'],
-      email: json['email'],
+      userId: json['userId'],
+      userName: json['userName'],
+      designation: json['designation'],
+      emailAddress: json['emailAddress'],
     );
   }
 }

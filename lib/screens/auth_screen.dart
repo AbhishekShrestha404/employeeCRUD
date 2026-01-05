@@ -61,7 +61,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
       // Fetch employees from company API and save to Hive
       final employeeService = EmployeeServices();
-      final employees = await employeeService.fetchAndSaveEmployees();
+      await employeeService.fetchAndSaveEmployees();
 
       setState(() => isLoading = false);
 
