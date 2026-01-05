@@ -1,40 +1,62 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
-
 import 'package:employee_dashboard/models/employee.dart';
-import 'package:employee_dashboard/utils/api_config.dart';
+import '../utils/token_storage.dart';
+import '../utils/api_config.dart';
 
 class EmployeeServices {
   final Box<Employee> box = Hive.box<Employee>('employeesBox');
 
   Future<List<Employee>> fetchAndSaveEmployees() async {
     try {
-      final response = await http.get(Uri.parse(ApiConfig.baseUrl));
+      final token = await TokenStorage.getToken();
+      if (token == null) throw Exception("Token not found");
+
+      final response = await http.get(
+        Uri.parse(ApiConfig.get_user),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
-        // IMPORTANT: results is a LIST
-        final List results = data['results'];
+        final List results = data['employees'] ?? [];
 
         final List<Employee> employees = results.map<Employee>((json) {
           return Employee(
-            id: json['login']['uuid'].hashCode,
-            name: '${json['name']['first']} ${json['name']['last']}',
-            email: json['email'],
-            role: 'Employee',
+            id: json['id'] ?? DateTime.now().millisecondsSinceEpoch,
+            name: json['name'] ?? 'No Name',
+            email: json['email'] ?? '',
+            role: json['role'] ?? 'Employee',
           );
         }).toList();
+
         await box.clear();
         await box.addAll(employees);
+
         return employees;
+      } else if (response.statusCode == 401) {
+        throw Exception('Unauthorized: Token may have expired');
       } else {
-        throw Exception('Failed to load employees');
+        throw Exception('API Failed: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error loading employees: $e');
-      return [];
+      return box.values.toList(); // return offline data if API fails
     }
+  }
+
+  Future<void> addEmployee(Employee employee) async {
+    await box.add(employee);
+  }
+
+  Future<void> updateEmployee(int index, Employee employee) async {
+    await box.putAt(index, employee);
+  }
+
+  Future<void> deleteEmployee(int index) async {
+    await box.deleteAt(index);
   }
 }

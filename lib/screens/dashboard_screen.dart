@@ -1,12 +1,13 @@
 import 'package:employee_dashboard/models/employee.dart';
 import 'package:employee_dashboard/screens/auth_screen.dart';
 import 'package:employee_dashboard/screens/employee_list_screen.dart';
+import '../utils/token_storage.dart';
+
+import 'package:hive/hive.dart';
 import 'package:flutter/material.dart';
 
 class DashboardScreen extends StatefulWidget {
-  final Employee employee;
-
-  const DashboardScreen({super.key, required this.employee});
+  const DashboardScreen({super.key});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -37,10 +38,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      widget.employee.name,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
                   ],
                 ),
               ),
@@ -64,13 +61,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: ListTile(
                 leading: const Icon(Icons.logout),
                 title: const Text('Logout'),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context); // closes drawer
+
+                  await TokenStorage.deleteToken();
+
+                  await Hive.box<Employee>('employeesBox').clear();
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (_) => AuthScreen()),
-                    (route) => false, // remove every screen and redirect to authScreen
-                  ); 
+                    (route) =>
+                        false, // remove every screen and redirect to authScreen
+                  );
                 },
               ),
             ),
@@ -80,7 +82,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       body: Center(
         child: Text(
-          'Welcome, ${widget.employee.name}',
+          'Welcome to Dashboard',
           style: const TextStyle(fontSize: 18),
         ),
       ),

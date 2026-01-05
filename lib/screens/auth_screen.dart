@@ -1,9 +1,12 @@
-import 'package:employee_dashboard/models/employee.dart';
 import 'package:employee_dashboard/screens/dashboard_screen.dart';
+import 'package:employee_dashboard/services/auth_service.dart';
+import 'package:employee_dashboard/services/employee_services.dart';
+import 'package:employee_dashboard/models/employee.dart';
 import 'package:flutter/material.dart';
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+  final Employee? employee;
+  const AuthScreen({super.key, this.employee});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -15,7 +18,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
   String? usernameError;
   String? passwordError;
-
   bool isLoading = false;
 
   @override
@@ -26,17 +28,53 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   bool validateLogin() {
-    final username = usernameController.text.trim();
-
     setState(() {
-      usernameError = username.isEmpty ? 'Username must not be empty' : null;
-
-      passwordError = passwordController.text.isEmpty
+      usernameError = usernameController.text.trim().isEmpty
+          ? 'Username must not be empty'
+          : null;
+      passwordError = passwordController.text.trim().isEmpty
           ? 'Password must not be empty'
           : null;
     });
-
     return usernameError == null && passwordError == null;
+  }
+
+  Future<void> handleLogin() async {
+    if (!validateLogin()) return;
+
+    setState(() => isLoading = true);
+
+    try {
+      final authService = AuthService();
+      final loginSuccess = await authService.login(
+        usernameController.text.trim(),
+        passwordController.text.trim(),
+      );
+
+      if (!loginSuccess) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid username or password')),
+        );
+        return;
+      }
+
+      // Fetch employees from company API and save to Hive
+      final employeeService = EmployeeServices();
+      final employees = await employeeService.fetchAndSaveEmployees();
+
+      setState(() => isLoading = false);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+      );
+    } catch (e) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+    }
   }
 
   @override
@@ -61,7 +99,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
               const SizedBox(height: 40),
-
               TextField(
                 controller: usernameController,
                 decoration: InputDecoration(
@@ -70,9 +107,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   errorText: usernameError,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               TextField(
                 controller: passwordController,
                 obscureText: true,
@@ -82,37 +117,9 @@ class _AuthScreenState extends State<AuthScreen> {
                   errorText: passwordError,
                 ),
               ),
-
               const SizedBox(height: 40),
-
               ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : () async {
-                        if (!validateLogin()) return;
-
-                        setState(() => isLoading = true);
-
-                        // Simulate API call
-                        await Future.delayed(const Duration(seconds: 0));
-
-                        setState(() => isLoading = false);
-
-                        final employee = Employee(
-                          id: DateTime.now().millisecondsSinceEpoch,
-                          name: usernameController.text.trim(),
-                          role: 'employee',
-                          email:
-                              '${usernameController.text.trim()}@company.com',
-                        );
-
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => DashboardScreen(employee: employee),
-                          ),
-                        );
-                      },
+                onPressed: isLoading ? null : handleLogin,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
