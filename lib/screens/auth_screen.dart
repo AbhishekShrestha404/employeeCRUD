@@ -49,6 +49,7 @@ class _AuthScreenState extends State<AuthScreen> {
       final loginSuccess = await authService.login(
         usernameController.text.trim(),
         passwordController.text.trim(),
+        context,
       );
 
       if (!loginSuccess) {

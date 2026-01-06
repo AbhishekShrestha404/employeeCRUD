@@ -7,7 +7,7 @@ class Employee {
   @HiveField(0)
   final int userId;
 
-  @HiveField(1)
+  @HiveField(1) 
   final String userName;
 
   @HiveField(2)

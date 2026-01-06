@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:employee_dashboard/models/employee.dart';
 import 'package:employee_dashboard/services/employee_services.dart';
 import 'employee_form_screen.dart';
@@ -13,25 +14,49 @@ class EmployeeListScreen extends StatefulWidget {
 class _EmployeeListScreenState extends State<EmployeeListScreen> {
   List<Employee> employees = [];
   bool isLoading = true;
-  final EmployeeServices service = EmployeeServices();
+  late final Box<Employee> box;
 
   @override
   void initState() {
     super.initState();
-    loadEmployees();
+
+    // Open Hive box
+    box = Hive.box<Employee>('employeesBox');
+
+    // Load cached employees immediately
+    employees = box.values.toList();
+    isLoading = false;
+
+    // Fetch the single employee from API in background
+    loadEmployeeFromAPI();
   }
 
-  Future<void> loadEmployees() async {
+  Future<void> loadEmployeeFromAPI() async {
     setState(() => isLoading = true);
 
     try {
-      final result = await service.fetchAndSaveEmployees();
-      setState(() {
-        employees = result; // <-- always use API returned list
-      });
+      final service = EmployeeServices();
+      final employee = await service
+          .fetchAndSaveEmployees(); // returns single Employee?
+
+      if (employee != null) {
+        // Check if this employee already exists in the local list
+        final existsIndex = employees.indexWhere(
+          (e) => e.userId == employee.userId,
+        );
+
+        setState(() {
+          if (existsIndex == -1) {
+            employees.add(employee);
+          } else {
+            employees[existsIndex] = employee;
+          }
+        });
+      }
     } catch (_) {
+      debugPrint('API failed, using local Hive data');
       setState(() {
-        employees = service.box.values.toList(); // fallback offline
+        employees = box.values.toList();
       });
     } finally {
       setState(() => isLoading = false);
@@ -51,6 +76,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
               itemCount: employees.length,
               itemBuilder: (context, index) {
                 final emp = employees[index];
+
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
@@ -59,6 +85,42 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(emp.emailAddress),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // EDIT
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () async {
+                            final updatedEmployee =
+                                await Navigator.push<Employee>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        EmployeeFormScreen(employee: emp),
+                                  ),
+                                );
+
+                            if (updatedEmployee != null) {
+                              setState(() {
+                                employees[index] = updatedEmployee;
+                                box.putAt(index, updatedEmployee);
+                              });
+                            }
+                          },
+                        ),
+                        // DELETE
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              employees.removeAt(index);
+                              box.deleteAt(index);
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -69,10 +131,11 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
             context,
             MaterialPageRoute(builder: (_) => const EmployeeFormScreen()),
           );
+
           if (newEmployee != null) {
             setState(() {
               employees.add(newEmployee);
-              service.box.add(newEmployee);
+              box.add(newEmployee); // save in Hive for offline
             });
           }
         },

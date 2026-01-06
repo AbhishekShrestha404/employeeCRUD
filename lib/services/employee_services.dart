@@ -8,7 +8,8 @@ import 'package:employee_dashboard/utils/api_config.dart';
 class EmployeeServices {
   final Box<Employee> box = Hive.box<Employee>('employeesBox');
 
-  Future<List<Employee>> fetchAndSaveEmployees() async {
+  /// Fetch single employee from API and save to Hive
+  Future<Employee?> fetchAndSaveEmployees() async {
     try {
       final token = await TokenStorage.getToken();
       if (token == null) throw Exception("Token not found");
@@ -23,40 +24,47 @@ class EmployeeServices {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List results = data['employees'] ?? [];
+        final employee = Employee.fromJson(data);
 
-        final List<Employee> employees = results.map<Employee>((json) {
-          return Employee(
-            userId: json['id'] ?? DateTime.now().millisecondsSinceEpoch,
-            userName: json['name'] ?? 'No Name',
-            designation: json['role'] ?? 'Employee',
-            emailAddress: json['email'] ?? '',
-          );
-        }).toList();
-
+        // Clear previous Hive data and save the latest employee
         await box.clear();
-        await box.addAll(employees);
+        await box.add(employee);
 
-        return employees;
+        return employee;
       } else if (response.statusCode == 401) {
         throw Exception('Unauthorized: Token may have expired');
       } else {
         throw Exception('API Failed: ${response.statusCode}');
       }
     } catch (e) {
-      return box.values.toList(); // return offline data if API fails
+      print('Fetch failed: $e');
+
+      // Fallback: return cached employee if available
+      if (box.isNotEmpty) return box.getAt(0);
+
+      // Nothing to return
+      return null;
     }
   }
 
+  /// Add a new employee to Hive
   Future<void> addEmployee(Employee employee) async {
     await box.add(employee);
   }
 
+  /// Update an employee in Hive by index
   Future<void> updateEmployee(int index, Employee employee) async {
     await box.putAt(index, employee);
   }
 
+  /// Delete an employee from Hive by index
   Future<void> deleteEmployee(int index) async {
     await box.deleteAt(index);
+  }
+
+  /// Optional: Get cached employee (first entry)
+  Employee? getCachedEmployee() {
+    if (box.isNotEmpty) return box.getAt(0);
+    return null;
   }
 }
