@@ -1,6 +1,7 @@
-import 'package:employee_dashboard/models/employee.dart';
+import 'package:employee_dashboard/models/user_profile.dart';
 import 'package:employee_dashboard/screens/auth_screen.dart';
-import 'package:employee_dashboard/screens/employee_list_screen.dart';
+import 'package:employee_dashboard/screens/edit_profile_screen.dart';
+import 'package:employee_dashboard/screens/setting_screen.dart';
 import '../utils/token_storage.dart';
 
 import 'package:hive/hive.dart';
@@ -14,6 +15,17 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  late Box<UserProfile> userBox;
+
+  @override
+  void initState() {
+    super.initState();
+    userBox = Hive.box<UserProfile>('userProfileBox');
+  }
+
+  UserProfile? get loggedInUser =>
+      userBox.isNotEmpty ? userBox.values.first : null;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,18 +35,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: Colors.purple[300]),
+              decoration: BoxDecoration(color: Colors.orange[700]),
               child: Align(
                 alignment: Alignment.bottomCenter,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    const Text(
-                      'Employee Dashboard',
+                    Text(
+                      loggedInUser?.fullName ?? 'WELCOME',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      loggedInUser?.emailAddress ?? '',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -44,12 +63,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
 
             ListTile(
-              leading: const Icon(Icons.people),
-              title: const Text('Employees'),
+              leading: const Icon(Icons.person),
+              title: const Text('My Information'),
+              onTap: () {
+                if (loggedInUser == null) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        EditProfileScreen(userProfile: loggedInUser!),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const EmployeeListScreen()),
+                  MaterialPageRoute(builder: (_) => const SettingScreen()),
                 );
               },
             ),
@@ -66,7 +99,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   await TokenStorage.deleteToken();
 
-                  await Hive.box<Employee>('employeesBox').clear();
+                  await Hive.box<UserProfile>('userProfileBox').clear();
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (_) => AuthScreen()),

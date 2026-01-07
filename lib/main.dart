@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'screens/auth_screen.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'models/employee.dart';
+import 'models/user_profile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Hive.initFlutter();
 
-  Hive.registerAdapter(EmployeeAdapter());
+  Hive.registerAdapter(UserProfileAdapter());
 
-  await Hive.openBox<Employee>('employeesBox');
+  await Hive.openBox<UserProfile>('userProfileBox');
 
   runApp(const MyApp());
 }

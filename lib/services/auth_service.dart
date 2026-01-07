@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:hive/hive.dart';
+
+import 'package:employee_dashboard/models/user_profile.dart';
 import '../utils/token_storage.dart';
 import 'package:employee_dashboard/utils/api_config.dart';
 
@@ -45,5 +48,33 @@ class AuthService {
       ).showSnackBar(SnackBar(content: Text('Something went wrong: $e')));
       return false;
     }
+  }
+
+  Future<void> fetchAndSaveUserProfile() async {
+    final token = await TokenStorage.getToken();
+
+    if (token == null) {
+      throw Exception('Token not found');
+    }
+
+    final response = await http.get(
+      Uri.parse(ApiConfig.get_user), //  profile endpoint
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load user profile');
+    }
+
+    final Map<String, dynamic> data = jsonDecode(response.body);
+
+    final userProfile = UserProfile.fromJson(data);
+
+    final box = Hive.box<UserProfile>('userProfileBox');
+    await box.clear(); // only one logged-in user
+    await box.add(userProfile);
   }
 }

@@ -1,12 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:employee_dashboard/screens/dashboard_screen.dart';
 import 'package:employee_dashboard/services/auth_service.dart';
-import 'package:employee_dashboard/services/employee_services.dart';
-import 'package:employee_dashboard/models/employee.dart';
-import 'package:flutter/material.dart';
 
 class AuthScreen extends StatefulWidget {
-  final Employee? employee;
-  const AuthScreen({super.key, this.employee});
+  const AuthScreen({super.key});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -46,6 +43,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       final authService = AuthService();
+
       final loginSuccess = await authService.login(
         usernameController.text.trim(),
         passwordController.text.trim(),
@@ -60,9 +58,8 @@ class _AuthScreenState extends State<AuthScreen> {
         return;
       }
 
-      // Fetch employees from company API and save to Hive
-      final employeeService = EmployeeServices();
-      await employeeService.fetchAndSaveEmployees();
+      // Fetch & save logged-in user profile
+      await authService.fetchAndSaveUserProfile();
 
       setState(() => isLoading = false);
 
@@ -72,9 +69,9 @@ class _AuthScreenState extends State<AuthScreen> {
       );
     } catch (e) {
       setState(() => isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed: $e')),
+      );
     }
   }
 
